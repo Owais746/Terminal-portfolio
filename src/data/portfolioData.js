@@ -2,7 +2,7 @@ export const personalInfo = {
   name: "Muhammad Owais Anwer",
   role: "Full Stack Developer & Next.js Developer & Automation Specialist",
   birthday: "27 Dec 2007",
-  age: "17",
+  age: "18",
   phone: "+92 337 8099063",
   email: "mrowaisno30@gmail.com",
   city: "Karachi, Pakistan",
