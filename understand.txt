@@ -1,0 +1,207 @@
+TERMINAL-PORTFOLIO: FULL CODE EXPLANATION (SIMPLE WORDS)
+
+OVERVIEW
+- This is a React app built with Vite and Tailwind CSS.
+- It shows a fake “terminal” on the page. You type commands, it shows answers.
+- Main logic: Terminal.jsx (the UI) + commandHandler.js (what each command does) + data files.
+
+ENTRY FILES
+1) index.html
+- A very small HTML file.
+- It has a <div id="root"></div> — React will render the app inside this div.
+- It loads /src/main.jsx as a module script.
+
+2) src/main.jsx
+- Imports StrictMode, createRoot (React), global CSS (index.css), and the App component.
+- createRoot(document.getElementById('root')).render(...) mounts <App /> into the page.
+- <StrictMode> helps catch problems in development.
+
+3) src/App.jsx
+- Imports Terminal from ./components/Terminal.
+- Function App returns <Terminal />. That’s the whole app.
+
+STYLES
+4) src/index.css
+- Enables Tailwind layers: @tailwind base, components, utilities.
+- Resets some basics (* { margin:0, padding:0, box-sizing: border-box }).
+- Body uses monospace, black background, green text.
+- Adds custom utility classes:
+  - .text-glow: adds glow around text.
+  - .terminal-glow: adds a green-ish box shadow.
+  - @keyframes blink + .cursor-blink: blinking cursor effect.
+  - @keyframes scanline + .scanline: moving scanline overlay.
+
+5) src/App.css
+- Default Vite template styles (logo spin, etc.). Likely not used in this project now.
+
+CONFIG
+6) eslint.config.js
+- ESLint setup for JS/JSX, browser globals, React hooks lint rules, and React Refresh for Vite.
+- Turns off old React JSX usage rules (since new JSX transform doesn’t need them).
+- no-unused-vars is adjusted to ignore ALL_CAPS vars and underscore args.
+
+7) postcss.config.js
+- Uses Tailwind via '@tailwindcss/postcss' plugin.
+
+8) tailwind.config.js
+- Tells Tailwind to scan index.html and all files under src for class names.
+- Extends theme with terminal colors:
+  - terminal.bg, terminal.text (green), terminal.cyan, yellow, red, blue.
+- Sets fontFamily.mono to ['Courier New','monospace'].
+
+9) vite.config.js
+- Standard Vite + React plugin config.
+
+DATA AND UTILITIES
+10) src/data/portfolioData.js
+- Holds all “content” shown by commands.
+- personalInfo: name, role, phone, email, city, links (GitHub, LinkedIn, etc.).
+- about: tagline and multiple paragraphs.
+- skills: list of skills with a string level like "85%".
+- projects: list of portfolio projects with title, description, url, tech list.
+- services: list of services (title + description).
+- experience: jobs with period, location, and bullet highlights.
+- stats: simple counters (happyClients, completedProjects, hoursOfWork).
+
+11) src/utils/stripHtml.js
+- stripHtml(html):
+  - Creates a temporary <div>, sets innerHTML = html, returns only the text (no tags).
+- formatForDisplay(content): returns stripHtml(content).
+- Purpose: When animating typing, we need plain text (no HTML tags), so we strip them first.
+
+12) src/utils/commandHandler.js
+- Exports processCommand(input).
+- Steps inside processCommand:
+  1) command = input.trim().toLowerCase()
+  2) args = command.split(' ')
+  3) mainCommand = args[0]
+  4) switch(mainCommand) to decide what to do.
+- For each command, returns an object: { type: string, content: string }
+  - Terminal.jsx uses type to handle special behavior (e.g., clear/banner).
+- Commands:
+  - help: Shows available commands with short descriptions (as HTML string with Tailwind classes).
+  - about: Prints personal info + about text. Uses data from personalInfo and about.
+  - skills: Two modes:
+      • With “--list”: shows a bar for each skill. It builds a bar using repeated block chars based on the percent value.
+      • Without flag: simple bullet list with name and level.
+  - projects:
+      • With a number: shows detailed info of that one project (title, description, tech, and link).
+      • Without number: shows all projects in a short list, with truncated descriptions and links.
+  - experience: Prints work history with highlights.
+  - services: Prints services list with titles and descriptions.
+  - contact: Prints email, phone, location, WhatsApp link.
+  - social: Prints links for GitHub, LinkedIn, Instagram, Facebook, Portfolio.
+  - stats: Prints numbers from stats.
+  - resume: Explains how to explore resume via commands and gives a download link (static path shown).
+  - whoami: Returns "visitor@owais-portfolio" text.
+  - date: Returns current date string from new Date().toString().
+  - clear: Special — tells Terminal to clear history.
+  - banner: Special — tells Terminal to show the ASCII banner again.
+  - theme: Lists theme names (feature placeholder).
+  - sudo: If the rest includes "rm -rf" → fun denial message; else error like real terminal.
+  - hack: Another joke/easter egg block.
+  - ls: Fake directory list string.
+  - pwd: Fake path string.
+  - echo: Returns whatever text comes after the command.
+  - default (unknown): Red error message and a tip to run help.
+
+MAIN UI COMPONENT
+13) src/components/Terminal.jsx
+- Imports React hooks, framer-motion, TypeAnimation, processCommand, personalInfo, and stripHtml.
+- Small component TypingText({ text, speed=20, onComplete })
+  - Purpose: show the output as if typed character-by-character.
+  - useState displayedText starts as ''
+  - useEffect sets an interval:
+      • Every “speed” ms, grows the displayedText by one character until complete.
+      • When done, clears interval and calls onComplete() if provided.
+  - Renders a <div> with the current displayed text, keeping whitespace and wrapping long words.
+
+- Main component Terminal()
+  State:
+  - history: array of past entries { command, output, type, isTyping? }.
+  - commandHistory: list of all commands typed (for ArrowUp/Down navigation).
+  - historyIndex: position in commandHistory when navigating (starts at -1 = not navigating).
+  - currentInput: current text in the input field.
+  - showWelcome: whether to show the ASCII banner + intro area.
+  - inputRef: reference to the <input> element (to focus it).
+  - outputRef: reference to the scrollable output container (to auto-scroll).
+  - isBooting: shows boot messages for ~2 seconds.
+  - isTyping: true while TypingText animation is running, false after it finishes.
+  - showHelpModal: shows a small modal with instructions; closable.
+
+  Effects:
+  - On mount:
+    • setTimeout after 2000ms: isBooting=false and showWelcome=true.
+    • Focus the input if it exists.
+  - When isTyping changes:
+    • If not typing, and input is not focused, re-focus it (so typing is smooth).
+  - When history or isTyping changes:
+    • Auto-scroll to bottom: outputRef.scrollTop = outputRef.scrollHeight.
+  - While isTyping is true:
+    • Every 50ms, also auto-scroll (helps keep the newest typed text visible).
+
+  Handlers:
+  - handleCommand(e) → runs onKeyDown on the input.
+    • If Enter:
+      - Prevent default.
+      - Read trimmed input. Ignore if empty or if isTyping (don’t allow new command during typing).
+      - Push input into commandHistory, reset historyIndex.
+      - Call processCommand(input) to get {type, content}.
+      - If type is 'clear': set history=[] and showWelcome=false.
+      - Else if type is 'banner': set showWelcome=true.
+      - Else: push a new entry into history with isTyping=true to trigger TypingText.
+      - Clear currentInput.
+    • If ArrowUp:
+      - Move up through commandHistory and set currentInput accordingly.
+    • If ArrowDown:
+      - Move down through commandHistory; when reaching past newest, reset to empty.
+    • If Tab: preventDefault (placeholder for future autocomplete).
+    • If Ctrl+L: clear history and hide welcome (like terminal “clear”).
+
+  - handleClickAnywhere(): focus input when you click background.
+
+  Small components inside Terminal:
+  - HelpModal: Animated panel with a short description and Close button. Uses framer-motion to slide in.
+  - ASCIIBanner: Preformatted ASCII art and a title block.
+  - BootSequence: Animated list of fake “system loading” lines.
+
+  Render:
+  - Outer container: full-screen black terminal background. Adds a faint scanline overlay.
+  - Help modal appears conditionally.
+  - Terminal window (rounded, glowing border).
+    • Top "portfolio buttons" bar: two links to other portfolios.
+    • Terminal header: colored dots and the prompt label visitor@owais-portfolio:~$
+    • Terminal body (scrollable area):
+      - While isBooting: show BootSequence.
+      - If not booting and showWelcome: show banner + TypeAnimation that prints name and role from personalInfo.
+      - history.map(...): For each past command:
+          · Show a prompt line (visitor@owais:~$ command)
+          · If item.isTyping is true: render TypingText with stripHtml(item.output). When TypingText finishes, it marks the last history item’s isTyping=false and sets isTyping=false.
+          · Else: render the HTML output with dangerouslySetInnerHTML (this allows the colored spans and links from commandHandler.js to display correctly).
+      - Input line (only when not booting): prompt + an <input> bound to currentInput with onKeyDown={handleCommand}.
+        · Shows a blinking cursor when not typing, or “Processing...” label when typing.
+    • Footer: small instruction and author name/role.
+  - Inline <style jsx> adds custom scrollbar styling for the output area.
+
+HOW IT ALL FITS TOGETHER
+- You type in the input. Press Enter.
+- handleCommand calls processCommand(text).
+- processCommand returns an object telling what to do and the content to show.
+- Terminal updates history. If the output should be animated, it sets isTyping and renders TypingText that prints one character at a time (using stripHtml to remove HTML tags so it types clean text). After typing completes, it swaps to the final HTML (so colors and links appear) and allows next command.
+- Special commands:
+  • clear → wipes the history and hides the welcome.
+  • banner → shows the ASCII banner/welcome again.
+- All display styling uses Tailwind classes defined in index.css and tailwind.config.js.
+
+NOTES / EDGE CASES
+- Some special characters in data (like quotes or dashes) may show funny symbols if system encoding is odd, but browsers usually handle it fine with UTF-8.
+- App.css appears from template and may be unused; safe to remove if not referenced.
+- The resume link points to a static path; ensure that file exists in public/assets if you want the download to work in production.
+- Because dangerouslySetInnerHTML is used for outputs, all HTML comes from our own code (commandHandler), which is safe. Don’t inject user-submitted HTML directly.
+
+SUMMARY OF KEY FUNCTIONS
+- processCommand(input): Parses the typed command and returns { type, content } based on a switch. Uses data from portfolioData.js to build the HTML string with Tailwind classes. Some commands are “special” (clear, banner) and are handled by Terminal differently.
+- TypingText({ text, speed, onComplete }): Shows text one character at a time using setInterval. Calls onComplete when done. Used to animate outputs.
+- stripHtml(html): Removes HTML tags by putting the HTML into a temporary div and reading only the text. Ensures TypingText shows plain text while animating.
+
+That’s the complete flow and logic explained in simple words.

@@ -9,7 +9,7 @@ import { stripHtml } from '../utils/stripHtml';
 // Custom typing effect component
 const TypingText = ({ text, speed = 20, onComplete }) => {
   const [displayedText, setDisplayedText] = useState('');
-
+  
   useEffect(() => {
     let index = 0;
     const interval = setInterval(() => {
@@ -153,20 +153,7 @@ const Terminal = () => {
       exit={{ opacity: 0, x: 30 }}
       className="fixed bottom-8 right-8 z-50 w-80"
     >
-      <div className="bg-black/1000 border-2 border-terminal-blue rounded-lg p-3 mt-50 shadow-2xl">
-        {/* Black Background */}
-        <div className="absolute inset-0 bg-black rounded-lg pointer-events-none -z-10"></div>
-        <div className="text-terminal-text text-xs mt-60 font-mono leading-relaxed h-24 overflow-hidden">
-          Welcome to My Terminal! This is an interactive command-line interface portfolio. If you're not familiar with terminal commands, no problem! You can explore my simpler portfolios those links are on top in blue
-        </div>
-
-        <button
-          onClick={() => setShowHelpModal(false)}
-          className="w-full px-3 py-1.5 bg-terminal-blue/20 hover:bg-terminal-blue/30 text-terminal-blue border border-terminal-blue/50 rounded transition-colors font-mono text-xs"
-        >
-          Close
-        </button>
-      </div>
+      
     </motion.div>
   );
 
@@ -206,6 +193,7 @@ const Terminal = () => {
 
   return (
     <div className="min-h-screen bg-terminal-bg flex items-center justify-center p-2 sm:p-4 md:p-8" onClick={handleClickAnywhere}>
+     
       {/* CRT Effect Overlay */}
       <div className="fixed inset-0 pointer-events-none bg-gradient-to-b from-transparent via-terminal-text/5 to-transparent opacity-10 scanline"></div>
       

@@ -1,4 +1,5 @@
 import { personalInfo, about, skills, projects, services, experience, stats } from '../data/portfolioData';
+import cvPdf from '../data/Muhammad_Owais_CV_Final.pdf';
 
 export const processCommand = (input) => {
   const command = input.trim().toLowerCase();
@@ -205,14 +206,14 @@ ${'-'.repeat(60)}
 ${'-'.repeat(60)}
 
 Use the following commands to explore my resume:
-  • <span class="text-terminal-cyan">about</span> - Personal information
-  • <span class="text-terminal-cyan">skills</span> - Technical skills
-  • <span class="text-terminal-cyan">experience</span> - Work experience
-  • <span class="text-terminal-cyan">projects</span> - Portfolio projects
-  • <span class="text-terminal-cyan">services</span> - Services I offer
+  â€¢ <span class="text-terminal-cyan">about</span> - Personal information
+  â€¢ <span class="text-terminal-cyan">skills</span> - Technical skills
+  â€¢ <span class="text-terminal-cyan">experience</span> - Work experience
+  â€¢ <span class="text-terminal-cyan">projects</span> - Portfolio projects
+  â€¢ <span class="text-terminal-cyan">services</span> - Services I offer
 
 <span class="text-terminal-yellow">Download PDF Resume:</span>
-<a href="/assets/img/Muhammad_Owais_CV_Final.pdf" download class="text-terminal-blue underline">Muhammad_Owais_Resume.pdf</a>
+<a href="${cvPdf}" download class="text-terminal-blue underline">Muhammad_Owais_Resume.pdf</a>
         `
       };
 
