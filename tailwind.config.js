@@ -8,12 +8,12 @@ export default {
     extend: {
       colors: {
         terminal: {
-          bg: '#000000',
-          text: '#00ff99',
-          cyan: '#00ffff',
-          yellow: '#ffff00',
-          red: '#ff0000',
-          blue: '#0099ff',
+          bg: 'var(--color-bg)',
+          text: 'var(--color-text)',
+          cyan: 'var(--color-cyan)',
+          yellow: 'var(--color-yellow)',
+          red: 'var(--color-red)',
+          blue: 'var(--color-blue)',
         }
       },
       fontFamily: {

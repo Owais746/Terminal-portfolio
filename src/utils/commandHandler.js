@@ -1,7 +1,7 @@
 import { personalInfo, about, skills, projects, services, experience, stats } from '../data/portfolioData';
 import cvPdf from '../data/Muhammad_Owais_CV_Final.pdf';
 
-export const processCommand = (input) => {
+export const processCommand = (input, context = {}) => {
   const command = input.trim().toLowerCase();
   const args = command.split(' ');
   const mainCommand = args[0];
@@ -63,9 +63,9 @@ ${about.description.map(para => `  ${para}`).join('\n\n')}
 ${'-'.repeat(60)}
 
 ${skills.map(skill => {
-  const bar = '█'.repeat(Math.floor(parseInt(skill.level) / 5)) + '░'.repeat(20 - Math.floor(parseInt(skill.level) / 5));
-  return `<span class="text-terminal-yellow">${skill.name.padEnd(20)}</span> [${bar}] ${skill.level}`;
-}).join('\n')}
+            const bar = '█'.repeat(Math.floor(parseInt(skill.level) / 5)) + '░'.repeat(20 - Math.floor(parseInt(skill.level) / 5));
+            return `<span class="text-terminal-yellow">${skill.name.padEnd(20)}</span> [${bar}] ${skill.level}`;
+          }).join('\n')}
           `
         };
       }
@@ -242,16 +242,28 @@ Use the following commands to explore my resume:
       };
 
     case 'theme':
+      const themeName = args[1];
+      const validThemes = ['default', 'cyberpunk', 'dracula', 'retro'];
+      if (themeName && validThemes.includes(themeName)) {
+        if (context.setTheme) {
+          context.setTheme(themeName);
+          return {
+            type: 'info',
+            content: `<span class="text-terminal-text">Theme switched to <span class="text-terminal-yellow font-bold">${themeName}</span></span>`
+          };
+        }
+        return { type: 'error', content: 'Theme changing not supported in this environment.' };
+      }
       return {
         type: 'theme',
         content: `
 <span class="text-terminal-cyan">Available themes:</span>
-  • green (default)
-  • cyan
-  • amber
-  • blue
+  • default (green)
+  • cyberpunk (yellow/pink)
+  • dracula (purple/dark)
+  • retro (amber)
 
-<span class="text-gray-500">Theme changing coming soon!</span>
+<span class="text-gray-500">Usage: theme <name></span>
         `
       };
 
@@ -281,16 +293,65 @@ Just kidding! But nice attempt 😄
       };
 
     case 'ls':
+      if (context.fs) {
+        const files = context.fs.ls();
+        if (files.length === 0) {
+          return { type: 'info', content: 'Empty directory' };
+        }
+        const fileList = files.map(f => {
+          if (f.type === 'directory') return `<span class="text-terminal-blue font-bold">${f.name}/</span>`;
+          return `<span class="text-terminal-text">${f.name}</span>`;
+        }).join('  ');
+        return { type: 'info', content: fileList };
+      }
       return {
         type: 'info',
         content: `about.txt  skills.json  projects.db  experience.log  contact.info  resume.pdf`
       };
 
     case 'pwd':
+      if (context.fs) {
+        return { type: 'info', content: context.fs.pwd() };
+      }
       return {
         type: 'info',
         content: '/home/owais/portfolio'
       };
+
+    case 'cd':
+      if (context.fs) {
+        const path = args[1] || '~';
+        const result = context.fs.cd(path);
+        if (result.success) {
+          return { type: 'cd', content: '' };
+        }
+        return { type: 'error', content: `<span class="text-terminal-red">${result.message}</span>` };
+      }
+      return { type: 'info', content: 'File system not active.' };
+
+    case 'cat':
+      if (context.fs) {
+        const file = args[1];
+        if (!file) return { type: 'error', content: 'Usage: cat <filename>' };
+        const result = context.fs.cat(file);
+        if (result.success) {
+          // Detect if content is JSON and pretty print?
+          // For now just dump content
+          let displayContent = result.content;
+          // formatting for readability if it looks like json
+          if (displayContent.startsWith('{') || displayContent.startsWith('[')) {
+            try {
+              const parsed = JSON.parse(displayContent);
+              displayContent = JSON.stringify(parsed, null, 2);
+            } catch (e) { /* ignore */ }
+          }
+
+          // preserve whitespace
+          return { type: 'info', content: `<pre class="whitespace-pre-wrap font-mono text-terminal-text">${displayContent}</pre>` };
+        }
+        return { type: 'error', content: `<span class="text-terminal-red">${result.message}</span>` };
+      }
+      return { type: 'error', content: 'File system not active.' };
 
     case 'echo':
       return {

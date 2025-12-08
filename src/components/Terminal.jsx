@@ -1,15 +1,15 @@
-/* eslint-disable no-unused-vars */
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TypeAnimation } from 'react-type-animation';
 import { processCommand } from '../utils/commandHandler';
 import { personalInfo } from '../data/portfolioData';
 import { stripHtml } from '../utils/stripHtml';
+import { useFileSystem } from '../hooks/useFileSystem';
 
 // Custom typing effect component
 const TypingText = ({ text, speed = 20, onComplete }) => {
   const [displayedText, setDisplayedText] = useState('');
-  
+
   useEffect(() => {
     let index = 0;
     const interval = setInterval(() => {
@@ -30,7 +30,10 @@ const TypingText = ({ text, speed = 20, onComplete }) => {
 
 const Terminal = () => {
   const [history, setHistory] = useState([]);
-  const [commandHistory, setCommandHistory] = useState([]);
+  const [commandHistory, setCommandHistory] = useState(() => {
+    const saved = localStorage.getItem('terminal_command_history');
+    return saved ? JSON.parse(saved) : [];
+  });
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [currentInput, setCurrentInput] = useState('');
   const [showWelcome, setShowWelcome] = useState(true);
@@ -39,6 +42,12 @@ const Terminal = () => {
   const [isBooting, setIsBooting] = useState(true);
   const [isTyping, setIsTyping] = useState(false);
   const [showHelpModal, setShowHelpModal] = useState(true);
+  const [theme, setTheme] = useState(() => localStorage.getItem('terminal_theme') || 'default');
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('terminal_theme', theme);
+  }, [theme]);
 
   useEffect(() => {
     // Boot sequence
@@ -52,6 +61,11 @@ const Terminal = () => {
       inputRef.current.focus();
     }
   }, []);
+
+  // Persist command history
+  useEffect(() => {
+    localStorage.setItem('terminal_command_history', JSON.stringify(commandHistory));
+  }, [commandHistory]);
 
   // Keep focus on input when not typing
   useEffect(() => {
@@ -79,11 +93,14 @@ const Terminal = () => {
     }
   }, [isTyping]);
 
+  // File System integration
+  const fs = useFileSystem();
+
   const handleCommand = (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
       const input = currentInput.trim();
-      
+
       if (input === '') return;
       if (isTyping) return; // Prevent new commands while typing
 
@@ -92,13 +109,22 @@ const Terminal = () => {
       setHistoryIndex(-1);
 
       // Process command
-      const result = processCommand(input);
+      const result = processCommand(input, { fs, setTheme });
 
       if (result.type === 'clear') {
         setHistory([]);
         setShowWelcome(false);
       } else if (result.type === 'banner') {
         setShowWelcome(true);
+      } else if (result.type === 'cd') {
+        // cd command doesn't output anything usually, but we record the command entry
+        setHistory(prev => [...prev, {
+          command: input,
+          output: '',
+          type: 'cd',
+          path: fs.pwd(), // Store path at time of execution if needed, or just current
+          isTyping: false
+        }]);
       } else {
         // Add command with typing animation
         setIsTyping(true);
@@ -106,7 +132,8 @@ const Terminal = () => {
           command: input,
           output: result.content,
           type: result.type,
-          isTyping: true
+          isTyping: true,
+          path: fs.pwd() // Store context path
         }]);
       }
 
@@ -132,7 +159,32 @@ const Terminal = () => {
       }
     } else if (e.key === 'Tab') {
       e.preventDefault();
-      // Auto-complete suggestions could go here
+      const input = currentInput;
+      const parts = input.split(' ');
+
+      if (parts.length === 1) {
+        // Command autocomplete
+        const commands = ['help', 'about', 'skills', 'projects', 'experience', 'contact', 'clear', 'ls', 'cd', 'cat', 'pwd', 'whoami', 'date', 'theme', 'sudo', 'hack'];
+        const matches = commands.filter(cmd => cmd.startsWith(parts[0]));
+        if (matches.length === 1) {
+          setCurrentInput(matches[0] + ' ');
+        }
+      } else {
+        // File/Argument autocomplete
+        const cmd = parts[0];
+        const partial = parts[parts.length - 1];
+        // Only autocomplete for file-aware commands
+        if (['cd', 'cat', 'ls'].includes(cmd)) {
+          const matches = fs.getCompletions(partial);
+          if (matches.length === 1) {
+            const newParts = [...parts];
+            newParts[newParts.length - 1] = matches[0];
+            setCurrentInput(newParts.join(' '));
+          } else if (matches.length > 1) {
+            // Show options? For now just don't complete to avoid complexity
+          }
+        }
+      }
     } else if (e.ctrlKey && e.key === 'l') {
       e.preventDefault();
       setHistory([]);
@@ -153,13 +205,13 @@ const Terminal = () => {
       exit={{ opacity: 0, x: 30 }}
       className="fixed bottom-8 right-8 z-50 w-80"
     >
-      
+
     </motion.div>
   );
 
   const ASCIIBanner = () => (
     <pre className="text-terminal-cyan text-glow font-mono text-xs sm:text-sm md:text-base">
-{`   ____                  _     
+      {`   ____                  _     
   / __ \\                (_)    
  | |  | |_      ____ _   _ ___ 
  | |  | \\ \\ /\\ / / _\` | | / __|
@@ -193,15 +245,15 @@ const Terminal = () => {
 
   return (
     <div className="min-h-screen bg-terminal-bg flex items-center justify-center p-2 sm:p-4 md:p-8" onClick={handleClickAnywhere}>
-     
+
       {/* CRT Effect Overlay */}
       <div className="fixed inset-0 pointer-events-none bg-gradient-to-b from-transparent via-terminal-text/5 to-transparent opacity-10 scanline"></div>
-      
+
       {/* Help Modal */}
       <AnimatePresence>
         {showHelpModal && <HelpModal />}
       </AnimatePresence>
-      
+
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
@@ -211,17 +263,17 @@ const Terminal = () => {
         {/* Portfolio Buttons - Top */}
         <div className="bg-terminal-text/10 px-4 py-2 border-b border-terminal-text/30">
           <div className="flex items-center justify-center gap-4">
-            <a 
-              href="https://i-portfolio-sandy-theta.vercel.app/" 
-              target="_blank" 
+            <a
+              href="https://i-portfolio-sandy-theta.vercel.app/"
+              target="_blank"
               rel="noopener noreferrer"
               className="px-3 py-1 bg-terminal-cyan/10 hover:bg-terminal-cyan/20 text-terminal-cyan rounded transition-colors border border-terminal-cyan/30 text-xs font-mono"
             >
               Beautiful Portfolio: HTML
             </a>
-            <a 
-              href="https://new-portfolio-on-next-js.vercel.app/" 
-              target="_blank" 
+            <a
+              href="https://new-portfolio-on-next-js.vercel.app/"
+              target="_blank"
               rel="noopener noreferrer"
               className="px-3 py-1 bg-terminal-blue/10 hover:bg-terminal-blue/20 text-terminal-blue rounded transition-colors border border-terminal-blue/30 text-xs font-mono"
             >
@@ -245,7 +297,7 @@ const Terminal = () => {
         </div>
 
         {/* Terminal Body */}
-        <div 
+        <div
           ref={outputRef}
           className="p-4 sm:p-6 h-[calc(100vh-260px)] sm:h-[calc(100vh-220px)] overflow-y-auto font-mono text-xs sm:text-sm custom-scrollbar"
         >
@@ -301,19 +353,19 @@ const Terminal = () => {
               </div>
               {item.isTyping ? (
                 <div className="text-terminal-text pl-4 typing-text">
-                  <TypingText 
+                  <TypingText
                     text={stripHtml(item.output)}
                     speed={6.67}
                     onComplete={() => {
                       setIsTyping(false);
-                      setHistory(prev => prev.map((h, idx) => 
-                        idx === prev.length - 1 ? {...h, isTyping: false} : h
+                      setHistory(prev => prev.map((h, idx) =>
+                        idx === prev.length - 1 ? { ...h, isTyping: false } : h
                       ));
                     }}
                   />
                 </div>
               ) : (
-                <div 
+                <div
                   className="text-terminal-text pl-4 whitespace-pre-wrap break-words"
                   dangerouslySetInnerHTML={{ __html: item.output }}
                 />
@@ -328,7 +380,7 @@ const Terminal = () => {
               <span className="text-terminal-text/50">@</span>
               <span className="text-terminal-cyan">owais</span>
               <span className="text-terminal-text/50">:</span>
-              <span className="text-terminal-blue">~</span>
+              <span className="text-terminal-blue">{fs.pwd()}</span>
               <span className="text-terminal-text/50">$</span>
               <input
                 ref={inputRef}
@@ -340,6 +392,8 @@ const Terminal = () => {
                 style={{ color: '#00ff99', fontSize: 'inherit' }}
                 autoFocus
                 spellCheck={false}
+                autoComplete="off"
+                aria-label="Terminal Input"
                 disabled={isTyping}
               />
               {!isTyping && <span className="cursor-blink text-terminal-text">▋</span>}
