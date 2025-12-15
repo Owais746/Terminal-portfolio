@@ -88,7 +88,7 @@ export const projects = [
   {
     title: "Task & Project Manager (Next.js App)",
     description: "Full-stack task & project management system with JWT auth and role-based access control Kanban board, file attachments, analytics dashboard, and real-time notifications",
-    url: "https://warpuninstallation.vercel.app/",
+    url: "https://task-project-manager-mocha.vercel.app/",
     tech: ["Next.JS", "Tailwind CSS", "TypeScript" , "JWT" , "MongoDB"]
   },
   {
