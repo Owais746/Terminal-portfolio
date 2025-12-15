@@ -80,6 +80,18 @@ export const projects = [
     tech: ["MongoDB", "Express", "React", "Node.js", "JWT", "Vercel"]
   },
   {
+    title: "restaurant chatbot",
+    description: " AI-powered restaurant chatbot with persistent conversation memory in MongoDB Menu browsing, order placement, and OpenRouter-based AI responses",
+    url: "https://4tq32fpaq7whwhnzv23rbr.streamlit.app/",
+    tech: ["Streamlit", "Openrouter", "Python", "MongoDB"]
+  },
+  {
+    title: "Task & Project Manager (Next.js App)",
+    description: "Full-stack task & project management system with JWT auth and role-based access control Kanban board, file attachments, analytics dashboard, and real-time notifications",
+    url: "https://warpuninstallation.vercel.app/",
+    tech: ["Next.JS", "Tailwind CSS", "TypeScript" , "JWT" , "MongoDB"]
+  },
+  {
     title: "School Website 1",
     description: "Demo school website showcasing modern design, responsive layout, and essentials.",
     url: "https://school-demo-gamma.vercel.app/",
